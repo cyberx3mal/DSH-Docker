@@ -1,0 +1,47 @@
+{
+  "name": "@local/docker-sidebar",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Docker state, compose projects and container controls in the Harness sidebar footer.",
+  "type": "module",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "docker",
+    "sidebar"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cyberx3mal/DSH-Docker.git"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "README_RU.md",
+    "README_EN.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  }
+}

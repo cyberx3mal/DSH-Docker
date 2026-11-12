@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Docker sidebar",
+    "description": "Shows Docker engine state, compose projects and standalone containers in the sidebar footer, with start, stop, restart, log console and crash alerts."
+  }
+}
