@@ -1,6 +1,6 @@
 {
   "name": "@local/docker-sidebar",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "private": true,
   "description": "Docker state, compose projects and container controls in the Harness sidebar footer.",
   "type": "module",

@@ -82,8 +82,12 @@ window.__ModuleLoader__.load({
         'settings.sort.project': 'By project',
         'settings.hideStopped': 'Hide stopped projects',
         'settings.hideStoppedHint': 'Projects without running containers and without crashes are left out of the list.',
-        'settings.hideEmpty': 'Hide empty widget',
-        'settings.hideEmptyHint': 'Hide the strip completely while there are no containers.',
+        'settings.hideEmpty': 'Hide the widget',
+        'settings.hideEmptyHint':
+          'When the strip leaves the sidebar. A crashed container always brings it back.',
+        'settings.hideEmpty.off': 'Never',
+        'settings.hideEmpty.empty': 'No containers',
+        'settings.hideEmpty.stopped': 'All stopped',
         'settings.density': 'Density',
         'settings.densityHint': 'Row padding inside the widget.',
         'settings.density.compact': 'Compact',
@@ -210,8 +214,12 @@ window.__ModuleLoader__.load({
         'settings.sort.project': 'По проекту',
         'settings.hideStopped': 'Скрывать остановленные проекты',
         'settings.hideStoppedHint': 'Проекты без запущенных контейнеров и без падений не показываются в списке.',
-        'settings.hideEmpty': 'Скрывать пустой виджет',
-        'settings.hideEmptyHint': 'Полностью скрывать полоску, пока контейнеров нет.',
+        'settings.hideEmpty': 'Скрывать виджет',
+        'settings.hideEmptyHint':
+          'Когда полоска полностью исчезает из боковой панели. Упавший контейнер всегда возвращает её на место.',
+        'settings.hideEmpty.off': 'Никогда',
+        'settings.hideEmpty.empty': 'Нет контейнеров',
+        'settings.hideEmpty.stopped': 'Все остановлены',
         'settings.density': 'Плотность',
         'settings.densityHint': 'Отступы строк внутри виджета.',
         'settings.density.compact': 'Компактно',
@@ -835,6 +843,8 @@ window.__ModuleLoader__.load({
     const HUNG_CHOICES = [0, 5, 15, 60]
     /** Alert sounds offered for a container crash. */
     const SOUND_CHOICES = ['off', 'twoTone', 'chime', 'alarm', 'ping']
+    /** When the footer strip hides itself: never, with no containers at all, or while nothing runs. */
+    const HIDE_CHOICES = ['off', 'empty', 'stopped']
     /** Preferences of the widget, before the user changes anything. */
     const DEFAULT_SETTINGS = {
       pollSeconds: 5,
@@ -847,7 +857,7 @@ window.__ModuleLoader__.load({
       sortMode: 'status',
       hideStoppedProjects: false,
       pinnedProjects: [],
-      hideEmptyWidget: false,
+      hideEmpty: 'off',
       density: 'compact',
       fontSize: 12,
       hungMinutes: 0,
@@ -863,9 +873,13 @@ window.__ModuleLoader__.load({
       if (raw === null || typeof raw !== 'object') return out
       const poll = Number(raw.pollSeconds)
       if (POLL_CHOICES.includes(poll)) out.pollSeconds = poll
-      for (const key of ['showCounters', 'showProjectCount', 'showAllButtons', 'showStandalone', 'confirmStopAll', 'hideStoppedProjects', 'hideEmptyWidget', 'detailedRows', 'showUptime']) {
+      for (const key of ['showCounters', 'showProjectCount', 'showAllButtons', 'showStandalone', 'confirmStopAll', 'hideStoppedProjects', 'detailedRows', 'showUptime']) {
         if (typeof raw[key] === 'boolean') out[key] = raw[key]
       }
+      // The older boolean said "hide while there are no containers"; keep that meaning on upgrade.
+      if (HIDE_CHOICES.includes(raw.hideEmpty)) out.hideEmpty = raw.hideEmpty
+      else if (raw.hideEmptyWidget === true) out.hideEmpty = 'empty'
+      else if (raw.hideEmptyWidget === false) out.hideEmpty = 'off'
       if (raw.crashSound === true) out.crashSound = 'twoTone'
       else if (raw.crashSound === false) out.crashSound = 'off'
       else if (SOUND_CHOICES.includes(raw.crashSound)) out.crashSound = raw.crashSound
@@ -1268,10 +1282,11 @@ window.__ModuleLoader__.load({
         h(
           SettingsRow,
           { title: tr('settings.hideEmpty'), hint: tr('settings.hideEmptyHint') },
-          h(SettingsSwitch, {
+          h(SettingsSegments, {
             label: tr('settings.hideEmpty'),
-            checked: value.hideEmptyWidget,
-            onChange: next => settings.update({ hideEmptyWidget: next }),
+            value: value.hideEmpty,
+            options: HIDE_CHOICES.map(choice => ({ value: choice, label: tr(`settings.hideEmpty.${choice}`) })),
+            onChange: next => settings.update({ hideEmpty: next }),
           }),
         ),
         h(
@@ -2412,7 +2427,20 @@ window.__ModuleLoader__.load({
       const orderedProjects = sortProjects(visibleProjects, settings.sortMode, pinnedSet)
       const orderedStandalone = sortContainers(standalone, settings.sortMode)
       const hungMs = settings.hungMinutes * 60000
-      const hideForEmpty = settings.hideEmptyWidget === true && engineRunning && totals !== undefined && totals.containers === 0
+      // The strip can step out of the way on request. "empty" hides while Docker reports no
+      // containers at all; "stopped" hides while none of them is running, restarting or paused —
+      // except after a crash, the one thing the strip exists to surface. While the very first
+      // state is still loading the strip stays hidden as well, so it never flashes in and out.
+      const liveContainers = allContainers.filter(
+        container => container.state === 'running' || container.state === 'restarting' || container.state === 'paused',
+      ).length
+      const nothingToWatch = totals !== undefined && liveContainers === 0 && crashedCount === 0
+      const hideForEmpty =
+        settings.hideEmpty === 'empty'
+          ? snapshot.phase === 'loading' || (totals !== undefined && totals.containers === 0)
+          : settings.hideEmpty === 'stopped'
+            ? snapshot.phase === 'loading' || nothingToWatch
+            : false
       const alertIds = new Set(Object.keys(alerts))
       // Workspace directories of the chats currently in front: the badge follows the folder,
       // never the container list, so a project keeps its badge even when some of its

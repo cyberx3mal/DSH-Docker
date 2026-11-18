@@ -43,7 +43,7 @@ Settings live in **Settings → Docker** (with the Docker icon) and apply immedi
 | Language | Auto / English / Русский | Auto |
 | Refresh interval | off, 2, 5, 10, 30 seconds | 5 s |
 | Hide stopped projects | on/off | off |
-| Hide empty widget | on/off | off |
+| Hide widget | never / no containers / all stopped | never |
 | Density | compact / normal / wide | compact |
 | Font size | 11 / 12 / 13 / 14 px | 12 |
 | Detailed rows | on/off | off |
@@ -101,7 +101,7 @@ plugin_manager: { action: install_bundle, target: "<absolute path to this folder
 `docker` must be available to the Harness process. After installing or updating the files the
 host half needs a plugin restart (toggle the row in **Plugins**) and the page needs a reload.
 
-The settings page shows the version of the installed plugin (“Plugin version 1.2.0”). If
+The settings page shows the version of the installed plugin (“Plugin version 1.2.2”). If
 another machine reports a different version, update the plugin folder:
 
 ```
